@@ -10,14 +10,14 @@ import UIKit
 final class ImagesListViewController: UIViewController {
     
     private let  photoName = Array(0 ..< 20).map {"\($0)"}
-    
+    private let showSingleImageSegueIdentifier = "ShowSingleImage"
     private lazy var dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .long
         formatter.timeStyle = .none
         return formatter
     }()
-
+    
     @IBOutlet private var tableView: UITableView!
     
     override func viewDidLoad() {
@@ -28,14 +28,30 @@ final class ImagesListViewController: UIViewController {
         let cellName = photoName[indexPath.row]
         guard let image = UIImage(named: cellName) else {return}
         cell.cellImage.image = image
-        
+        cell.selectionStyle = .none
         cell.dateLabel.text = dateFormatter.string(from: Date())
         
         let likeImage = indexPath.row % 2 == 0 ?
-            UIImage(named: "ActiveLikeButton"):
-            UIImage(named: "NoActiveLikeButton")
+        UIImage(named: "ActiveLikeButton"):
+        UIImage(named: "NoActiveLikeButton")
         
         cell.likeButton.setImage(likeImage, for: .normal)
+    }
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == showSingleImageSegueIdentifier {
+            guard let viewController = segue.destination as? SingleImageViewController,
+                  let indexPath = sender as? IndexPath
+            else {
+                assertionFailure("Invalid segue destination")
+                return
+            }
+            let image = UIImage(named: photoName[indexPath.row])
+            viewController.image = image
+        }
+        else{
+            super.prepare(for: segue, sender: sender)
+        }
     }
 }
 
@@ -43,7 +59,7 @@ extension ImagesListViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return photoName.count
     }
-
+    
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: ImagesListCell.reuseIdentifier, for: indexPath)
         
@@ -57,7 +73,9 @@ extension ImagesListViewController: UITableViewDataSource {
 }
 
 extension ImagesListViewController: UITableViewDelegate {
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {}
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        performSegue(withIdentifier: showSingleImageSegueIdentifier, sender: indexPath)
+    }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat{
         let cellName = photoName[indexPath.row]
