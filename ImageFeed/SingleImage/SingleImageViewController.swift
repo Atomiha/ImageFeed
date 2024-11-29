@@ -7,8 +7,8 @@
 
 import UIKit
 
-class SingleImageViewController: UIViewController {
-    var image: UIImage? {
+final class SingleImageViewController: UIViewController {
+     var image: UIImage? {
         didSet {
             guard isViewLoaded, let image else { return }
             imageView.image = image
@@ -17,8 +17,8 @@ class SingleImageViewController: UIViewController {
         }
     }
     
-    @IBOutlet var scrollView: UIScrollView!
-    @IBOutlet var imageView: UIImageView!
+    @IBOutlet private var scrollView: UIScrollView!
+    @IBOutlet private var imageView: UIImageView!
     @IBAction private func didTapBackButton() {
         dismiss(animated: true, completion: nil)
     }

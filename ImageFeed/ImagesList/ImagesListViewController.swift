@@ -28,7 +28,7 @@ final class ImagesListViewController: UIViewController {
         let cellName = photoName[indexPath.row]
         guard let image = UIImage(named: cellName) else {return}
         cell.cellImage.image = image
-        
+        cell.selectionStyle = .none
         cell.dateLabel.text = dateFormatter.string(from: Date())
         
         let likeImage = indexPath.row % 2 == 0 ?
