@@ -10,7 +10,9 @@ import UIKit
 
 final class OAuth2TokenStorage {
     private let tokenKey = "oauth2Token"
-    static let shared = OAuth2TokenStorage() 
+    static let shared = OAuth2TokenStorage()
+    
+    private init() {}
     
     var token: String? {
         get {
