@@ -20,6 +20,7 @@ final class AuthViewController: UIViewController, WebViewViewControllerDelegate 
         super.viewDidLoad()
         configureBackButton()
     }
+    
     func configureBackButton()  {
         navigationController?.navigationBar.backIndicatorImage = UIImage(named: "backward_button")
         navigationController?.navigationBar.backIndicatorTransitionMaskImage = UIImage(named: "backward_button")
@@ -43,15 +44,13 @@ final class AuthViewController: UIViewController, WebViewViewControllerDelegate 
     
     func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String) {
         oauth2Service.fetchOAuthToken(code: code) { result in
-                switch result {
-                case .success(let token):
-                    print("Successfully fetched token: \(token)")
-                    // Обновите UI или выполните другие действия
-                case .failure(let error):
-                    print("Failed to fetch token: \(error.localizedDescription)")
-                    // Обработайте ошибку
-                }
+            switch result {
+            case .success(let token):
+                print("Successfully fetched token: \(token)")
+            case .failure(let error):
+                print("Failed to fetch token: \(error.localizedDescription)")
             }
+        }
     }
     
     func webViewViewControllerDidCancel(_ vc: WebViewViewController) {

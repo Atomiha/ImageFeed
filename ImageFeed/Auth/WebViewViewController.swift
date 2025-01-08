@@ -15,7 +15,7 @@ enum WebViewConstants {
 final class WebViewViewController: UIViewController, WKNavigationDelegate {
     
     @IBOutlet private var webView: WKWebView!
-    @IBOutlet var progressView: UIProgressView!
+    @IBOutlet private var progressView: UIProgressView!
     
     weak var delegate: WebViewViewControllerDelegate?
     
@@ -37,6 +37,7 @@ final class WebViewViewController: UIViewController, WKNavigationDelegate {
         
         webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress), context: nil)
     }
+    
     private func loadAuthView()  {
         
         guard var urlComponents = URLComponents(string: WebViewConstants.unsplashAuthorizeURLString) else { return }
@@ -63,7 +64,7 @@ final class WebViewViewController: UIViewController, WKNavigationDelegate {
             super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
         }
     }
-
+    
     private func updateProgress() {
         progressView.progress = Float(webView.estimatedProgress)
         progressView.isHidden = fabs(webView.estimatedProgress - 1.0) <= 0.0001
@@ -75,7 +76,7 @@ final class WebViewViewController: UIViewController, WKNavigationDelegate {
         if let code = code(from: navigationAction) {
             delegate?.webViewViewController(self, didAuthenticateWithCode: code)
             decisionHandler(.cancel)
-        } else{
+        } else {
             decisionHandler(.allow)
         }
     }

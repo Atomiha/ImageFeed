@@ -5,7 +5,7 @@
 //  Created by Михаил Атоян on 10.12.2024.
 //
 
-import UIKit
+import Foundation
 
 struct OAuthTokenResponseBody: Codable {
     let accessToken: String
@@ -17,10 +17,10 @@ struct OAuthTokenResponseBody: Codable {
 
 final class OAuth2Service {
     static let shared = OAuth2Service()
-    init() {}
+    private init() {}
     
-    func makeOAuthTokenRequest(code: String) -> URLRequest? {
-        guard let baseURL = URL(string: "https://unsplash.com") else {return nil}
+    private func makeOAuthTokenRequest(code: String) -> URLRequest? {
+        guard let baseURL = URL(string: "https://unsplash.com") else { return nil }
         
         var components = URLComponents(url: baseURL.appendingPathComponent("/oauth/token"), resolvingAgainstBaseURL: false)
         components?.queryItems = [
@@ -31,7 +31,7 @@ final class OAuth2Service {
             URLQueryItem(name: "grant_type", value: "authorization_code")
         ]
         
-        guard let url = components?.url else {return nil}
+        guard let url = components?.url else { return nil }
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -39,86 +39,62 @@ final class OAuth2Service {
     }
     
     func fetchOAuthToken(code: String, completion: @escaping (Result<String, Error>) -> Void) {
-        guard let request = makeOAuthTokenRequest(code: code) else {
-            completion(.failure(NSError(domain: "OAuth2Service", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid URLRequest"])))
-            return
-        }
+        guard let request = makeOAuthTokenRequest(code: code) else { return }
         
-        // Создаем задачу URLSession
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            // Обработка ошибок
-            if let error = error {
-                print("Network error: \(error.localizedDescription)")
-                DispatchQueue.main.async {
-                    completion(.failure(error))
+        let task = URLSession.shared.data(with: request) { result in
+            switch result {
+            case .success(let data):
+                do {
+                    let decoder = JSONDecoder()
+                    decoder.keyDecodingStrategy = .convertFromSnakeCase
+                    let response = try decoder.decode(OAuthTokenResponseBody.self, from: data)
+                    completion(.success(response.accessToken))
+                } catch {
+                    print("Failed to parse data: \(error.localizedDescription)")
                 }
-                return
-            }
-            
-            // Проверяем, что данные получены
-            guard let data = data else {
-                let noDataError = NSError(domain: "OAuth2Service", code: 0, userInfo: [NSLocalizedDescriptionKey: "No data received"])
-                print(noDataError.localizedDescription)
-                DispatchQueue.main.async {
-                    completion(.failure(noDataError))
-                }
-                return
-            }
-            
-            guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
-                let statusError = NSError(domain: "OAuth2Service", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid response status"])
-                print(statusError.localizedDescription)
-                DispatchQueue.main.async {
-                    completion(.failure(statusError))
-                }
-                return
-            }
-            
-            do {
-                let tokenResponse = try JSONDecoder().decode(OAuthTokenResponseBody.self, from: data)
-                let token = tokenResponse.accessToken
-                
-                let tokenStorage = OAuth2TokenStorage()
-                tokenStorage.token = token
-                
-                DispatchQueue.main.async {
-                    completion(.success(token))
-                }
-            } catch {
-                print("Decoding error: \(error.localizedDescription)")
-                DispatchQueue.main.async {
-                    completion(.failure(error))
-                }
+            case .failure(let error):
+                completion(.failure(error))
             }
         }
-        
         task.resume()
     }
 }
 
+enum NetworkError: Error {
+    case httpStatusCode(Int)
+    case urlRequestError(Error)
+    case urlSessionError
+}
+
 extension URLSession {
-    func dataTask(with request: URLRequest, completion: @escaping (Result<Data, Error>) -> Void) {
-        let task = self.dataTask(with: request) { data, response, error in
-            if let error = error {
-                completion(.failure(error))
-                return
+    func data(
+        with request: URLRequest,
+        completion: @escaping (Result<Data, Error>) -> Void
+    ) -> URLSessionTask {
+        let fulfillCompletionOnTheMainThread: (Result<Data, Error>) -> Void = { result in
+            DispatchQueue.main.async {
+                completion(result)
             }
-            
-            guard let httpResponse = response as? HTTPURLResponse else {
-                completion(.failure(NSError(domain: "OAuth2Service", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid response"])))
-                return
-            }
-            
-            guard (200...299).contains(httpResponse.statusCode) else {
-                let errorMessage = String(data: data ?? Data(), encoding: .utf8) ?? "Unknown error"
-                let statusError = NSError(domain: "OAuth2Service", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: errorMessage])
-                completion(.failure(statusError))
-                return
-            }
-            
-            completion(.success(data ?? Data()))
         }
-        task.resume()
+        
+        let task = dataTask(with: request, completionHandler: { data, response, error in
+            if let data = data, let response = response, let statusCode = (response as? HTTPURLResponse)?.statusCode {
+                if 200 ..< 300 ~= statusCode {
+                    fulfillCompletionOnTheMainThread(.success(data))
+                } else {
+                    if let receivedData = String(data: data, encoding: .utf8) {
+                        print(receivedData)
+                    }
+                    fulfillCompletionOnTheMainThread(.failure(NetworkError.httpStatusCode(statusCode)))
+                }
+            } else if let error = error {
+                fulfillCompletionOnTheMainThread(.failure(NetworkError.urlRequestError(error)))
+            } else {
+                fulfillCompletionOnTheMainThread(.failure(NetworkError.urlSessionError))
+            }
+        })
+        
+        return task
     }
 }
 

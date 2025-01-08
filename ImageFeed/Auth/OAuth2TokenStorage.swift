@@ -1,5 +1,5 @@
 //
-//  Untitled.swift
+//  OAuth2TokenStorage.swift
 //  ImageFeed
 //
 //  Created by Михаил Атоян on 03.01.2025.
@@ -8,12 +8,13 @@
 import UIKit
 
 
-class OAuth2TokenStorage {
+final class OAuth2TokenStorage {
     private let tokenKey = "oauth2Token"
+    static let shared = OAuth2TokenStorage() 
     
     var token: String? {
         get {
-            return UserDefaults.standard.string(forKey: tokenKey)
+            UserDefaults.standard.string(forKey: tokenKey)
         }
         set {
             UserDefaults.standard.set(newValue, forKey: tokenKey)
