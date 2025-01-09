@@ -10,7 +10,6 @@ import UIKit
 
 fileprivate let UnsplashAuthorizeURLString = "https://unsplash.com/oauth/authorize"
 
-
 final class WebViewViewController: UIViewController {
     @IBOutlet private var webView: WKWebView!
     @IBOutlet private var progressView: UIProgressView!
@@ -21,20 +20,7 @@ final class WebViewViewController: UIViewController {
         super.viewDidLoad()
 
         webView.navigationDelegate = self
-
-        var urlComponents = URLComponents(string: UnsplashAuthorizeURLString)!
-        urlComponents.queryItems = [
-            URLQueryItem(name: "client_id", value: Constants.accessKey),
-            URLQueryItem(name: "redirect_uri", value: Constants.redirectURI),
-            URLQueryItem(name: "response_type", value: "code"),
-            URLQueryItem(name: "scope", value: Constants.accessScope)
-        ]
-        let url = urlComponents.url!
-
-        let request = URLRequest(url: url)
-        webView.load(request)
-
-        updateProgress()
+        loadAuthView()
     }
 
     @IBAction private func didTapBackButton(_ sender: Any?) {
@@ -68,6 +54,26 @@ final class WebViewViewController: UIViewController {
         progressView.progress = Float(webView.estimatedProgress)
         progressView.isHidden = fabs(webView.estimatedProgress - 1.0) <= 0.0001
     }
+    
+    private func loadAuthView() {
+        guard var urlComponents = URLComponents(string: UnsplashAuthorizeURLString) else {
+            return
+        }
+
+        urlComponents.queryItems = [
+            URLQueryItem(name: "client_id", value: Constants.accessKey),
+            URLQueryItem(name: "redirect_uri", value: Constants.redirectURI),
+            URLQueryItem(name: "response_type", value: "code"),
+            URLQueryItem(name: "scope", value: Constants.accessScope)
+        ]
+
+        guard let url = urlComponents.url else {
+            return
+        }
+
+        let request = URLRequest(url: url)
+        webView.load(request)
+        }
 }
 
 extension WebViewViewController: WKNavigationDelegate {

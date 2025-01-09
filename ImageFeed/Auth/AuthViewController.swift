@@ -43,10 +43,13 @@ final class AuthViewController: UIViewController, WebViewViewControllerDelegate 
     }
     
     func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String) {
-        oauth2Service.fetchOAuthToken(code: code) { result in
+        oauth2Service.fetchOAuthToken(code: code) {[weak self] result in
             switch result {
             case .success(let token):
                 print("Successfully fetched token: \(token)")
+                guard let self else { return }
+                OAuth2TokenStorage.shared.token = token
+                delegate?.authViewController(self, didAuthenticateWithCode: code)
             case .failure(let error):
                 print("Failed to fetch token: \(error.localizedDescription)")
             }
