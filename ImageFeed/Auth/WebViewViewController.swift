@@ -8,7 +8,7 @@
 import UIKit
 @preconcurrency import WebKit
 
-fileprivate let UnsplashAuthorizeURLString = "https://unsplash.com/oauth/authorize"
+fileprivate let unsplashAuthorizeURLString = "https://unsplash.com/oauth/authorize"
 
 final class WebViewViewController: UIViewController {
     @IBOutlet private var webView: WKWebView!
@@ -56,7 +56,7 @@ final class WebViewViewController: UIViewController {
     }
     
     private func loadAuthView() {
-        guard var urlComponents = URLComponents(string: UnsplashAuthorizeURLString) else {
+        guard var urlComponents = URLComponents(string: unsplashAuthorizeURLString) else {
             return
         }
 
